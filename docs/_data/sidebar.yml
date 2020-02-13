@@ -94,7 +94,6 @@
         jp: リファクタリング
       url: /apex/refactoring
     - title:
-        en: Quick Fix
         jp: クイック修正
       url: /apex/quick-fix
     - title:
@@ -110,7 +109,6 @@
         jp: ISV デバッガ
       url: /apex/isv-debugger
     - title:
-        en: Language Server
         jp: 言語サーバ
       url: /apex/language-server
 - title:
