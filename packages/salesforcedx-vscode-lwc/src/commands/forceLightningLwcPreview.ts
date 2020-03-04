@@ -160,15 +160,15 @@ export async function forceLightningLwcPreview(sourceUri: vscode.Uri) {
   if (DevServerService.instance.isServerHandlerRegistered()) {
     switch (platformSelection) {
       case PlatformType.Desktop: {
-        handleDesktop(fullUrl, startTime);
+        await handleDesktop(fullUrl, startTime);
         break;
       }
       case PlatformType.iOS: {
-        handleiOS(fullUrl, startTime, target);
+        await handleiOS(fullUrl, startTime, target);
         break;
       }
       case PlatformType.Android: {
-        handleAndroid(fullUrl, startTime, target);
+        await handleAndroid(fullUrl, startTime, target);
         break;
       }
     }
@@ -180,48 +180,6 @@ export async function forceLightningLwcPreview(sourceUri: vscode.Uri) {
       openBrowser: platformSelection === PlatformType.Desktop,
       fullUrl,
       platform: platformSelection
-    });
-
-    const commandlet = new SfdxCommandlet(
-      preconditionChecker,
-      parameterGatherer,
-      executor
-    );
-
-    await commandlet.run();
-    telemetryService.sendCommandEvent(logName, startTime);
-  }
-}
-
-async function handleServer(
-  fullUrl: string,
-  startTime: [number, number],
-  selectedPlatform: PlatformType,
-  targetName: string
-) {
-  if (DevServerService.instance.isServerHandlerRegistered()) {
-    switch (selectedPlatform) {
-      case PlatformType.Desktop: {
-        handleDesktop(fullUrl, startTime);
-        break;
-      }
-      case PlatformType.iOS: {
-        handleiOS(fullUrl, startTime, targetName);
-        break;
-      }
-      case PlatformType.Android: {
-        handleAndroid(fullUrl, startTime, targetName);
-        break;
-      }
-    }
-  } else {
-    console.log(`${logName}: server was not running, starting...`);
-    const preconditionChecker = new SfdxWorkspaceChecker();
-    const parameterGatherer = new EmptyParametersGatherer();
-    const executor = new ForceLightningLwcStartExecutor({
-      openBrowser: selectedPlatform === PlatformType.Desktop,
-      fullUrl,
-      platform: selectedPlatform
     });
 
     const commandlet = new SfdxCommandlet(
