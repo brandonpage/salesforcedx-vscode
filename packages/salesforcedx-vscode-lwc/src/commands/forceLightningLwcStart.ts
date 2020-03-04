@@ -49,42 +49,29 @@ export interface ForceLightningLwcStartOptions {
 
   platform: PlatformType;
 
+  target?: string;
 }
 
 export class ForceLightningLwcStartExecutor extends SfdxCommandletExecutor<{}> {
   private readonly options: ForceLightningLwcStartOptions;
 
-  constructor(options: ForceLightningLwcStartOptions = { openBrowser: true, platform: PlatformType.Desktop }) {
+  constructor(
+    options: ForceLightningLwcStartOptions = {
+      openBrowser: true,
+      platform: PlatformType.Desktop
+    }
+  ) {
     super();
     this.options = options;
   }
 
   public build(): Command {
-    let command =  new SfdxCommandBuilder()
-                    .withDescription(commandName)
-                    .withArg('force:lightning:lwc:start')
-                    .withLogName(logName)
-                    // .withJson()
-                    .build();
-
-    if (this.options.platform === PlatformType.iOS) {
-        command = new SfdxCommandBuilder()
-                    .withDescription(commandName)
-                    .withArg('force:lightning:lwc:preview')
-                    .withFlag('-p', 'iOS')
-                    .withFlag('-t', 'SFDXSimulator')
-                    .withFlag('-f', this.options.fullUrl != null ? this.options.fullUrl : '')
-                    .build();
-
-    } else if (this.options.platform === PlatformType.Android) {
-       command = new SfdxCommandBuilder()
-                    .withDescription(commandName)
-                    .withArg('force:lightning:lwc:preview')
-                    .withFlag('-p', 'Android')
-                    .withFlag('-t', 'SFDXEmulator')
-                    .withFlag('-f',  this.options.fullUrl != null ? this.options.fullUrl : '')
-                    .build();
-    }
+    const command = new SfdxCommandBuilder()
+      .withDescription(commandName)
+      .withArg('force:lightning:lwc:start')
+      .withLogName(logName)
+      // .withJson()
+      .build();
 
     return command;
   }
@@ -136,6 +123,54 @@ export class ForceLightningLwcStartExecutor extends SfdxCommandletExecutor<{}> {
 
         if (this.options.openBrowser) {
           await openBrowser(this.options.fullUrl || DEV_SERVER_BASE_URL);
+        } else {
+          const mobileCancellationTokenSource = new vscode.CancellationTokenSource();
+          const mobileCancellationToken = mobileCancellationTokenSource.token;
+
+          if (this.options.platform === PlatformType.iOS) {
+            const command = new SfdxCommandBuilder()
+              .withDescription(commandName)
+              .withArg('force:lightning:lwc:preview')
+              .withFlag('-p', 'iOS')
+              .withFlag(
+                '-t',
+                this.options.target != null
+                  ? this.options.target
+                  : 'SFDXSimulator'
+              )
+              .withFlag(
+                '-f',
+                this.options.fullUrl != null ? this.options.fullUrl : ''
+              )
+              .build();
+
+            const iOSExecutor = new CliCommandExecutor(command, {
+              env: { SFDX_JSON_TO_STDOUT: 'true' }
+            });
+            iOSExecutor.execute(mobileCancellationToken);
+          } else if (this.options.platform === PlatformType.Android) {
+            console.log(`${logName}: server was not running, starting...`);
+            const command = new SfdxCommandBuilder()
+              .withDescription(commandName)
+              .withArg('force:lightning:lwc:preview')
+              .withFlag('-p', 'Android')
+              .withFlag(
+                '-t',
+                this.options.target != null
+                  ? this.options.target
+                  : 'SFDXEmulator'
+              )
+              .withFlag(
+                '-f',
+                this.options.fullUrl != null ? this.options.fullUrl : ''
+              )
+              .build();
+
+            const anroidExecutor = new CliCommandExecutor(command, {
+              env: { SFDX_JSON_TO_STDOUT: 'true' }
+            });
+            anroidExecutor.execute(mobileCancellationToken);
+          }
         }
 
         this.logMetric(execution.command.logName, startTime);
