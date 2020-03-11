@@ -10,8 +10,9 @@ import {
   SfdxCommandBuilder
 } from '@salesforce/salesforcedx-utils-vscode/out/src/cli';
 import { ContinueResponse } from '@salesforce/salesforcedx-utils-vscode/out/src/types';
+
+import { componentUtil } from '@salesforce/lightning-lsp-common';
 import * as fs from 'fs';
-import { componentUtil } from 'lightning-lsp-common';
 import * as vscode from 'vscode';
 import { getGlobalStore, getWorkspaceSettings } from '../index';
 import { nls } from '../messages';
