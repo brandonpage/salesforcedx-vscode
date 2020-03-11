@@ -13,14 +13,12 @@ import { ContinueResponse } from '@salesforce/salesforcedx-utils-vscode/out/src/
 import * as fs from 'fs';
 import { componentUtil } from 'lightning-lsp-common';
 import * as vscode from 'vscode';
+import { getGlobalStore, getWorkspaceSettings } from '../index';
 import { nls } from '../messages';
 import { DevServerService } from '../service/devServerService';
 import { DEV_SERVER_PREVIEW_ROUTE } from './commandConstants';
 import { openBrowser, showError } from './commandUtils';
-import {
-  ForceLightningLwcStartExecutor,
-  PlatformType
-} from './forceLightningLwcStart';
+import { ForceLightningLwcStartExecutor } from './forceLightningLwcStart';
 
 const sfdxCoreExports = vscode.extensions.getExtension(
   'salesforce.salesforcedx-vscode-core'
@@ -46,31 +44,35 @@ export enum PreviewPlatformType {
 interface PreviewQuickPickItem extends vscode.QuickPickItem {
   id: PreviewPlatformType;
   defaultTargetName: string;
+  platformName: string;
 }
 
 const platformInput: PreviewQuickPickItem[] = [
   {
-    label: 'Use Desktop Browser',
-    detail: 'Preview Component On Desktop Browser',
+    label: nls.localize('force_lightning_lwc_preview_desktop_label'),
+    detail: nls.localize('force_lightning_lwc_preview_desktop_description'),
     alwaysShow: true,
     picked: true,
     id: PreviewPlatformType.Desktop,
+    platformName: '',
     defaultTargetName: ''
   },
   {
-    label: 'Use iOS Simulator',
-    detail: 'Preview Component On iOS',
+    label: nls.localize('force_lightning_lwc_preview_ios_label'),
+    detail: nls.localize('force_lightning_lwc_preview_ios_description'),
     alwaysShow: true,
     picked: false,
     id: PreviewPlatformType.iOS,
+    platformName: 'iOS',
     defaultTargetName: 'SFDXSimulator'
   },
   {
-    label: 'Use Android Emulator',
-    detail: 'Preview Component On Android',
+    label: nls.localize('force_lightning_lwc_preview_android_label'),
+    detail: nls.localize('force_lightning_lwc_preview_android_description'),
     alwaysShow: true,
     picked: false,
     id: PreviewPlatformType.Android,
+    platformName: 'Android',
     defaultTargetName: 'SFDXEmulator'
   }
 ];
@@ -78,20 +80,21 @@ const platformInput: PreviewQuickPickItem[] = [
 export async function forceLightningLwcPreview(sourceUri: vscode.Uri) {
   const startTime = process.hrtime();
   if (!sourceUri) {
-    const message = nls.localize(
-      'force_lightning_lwc_preview_file_undefined',
-      sourceUri
-    );
-    showError(new Error(message), logName, commandName);
-    return;
+    if (vscode.window.activeTextEditor) {
+      sourceUri = vscode.window.activeTextEditor.document.uri;
+    } else {
+      const message = nls.localize(
+        'force_lightning_lwc_preview_file_undefined',
+        sourceUri
+      );
+      showError(new Error(message), logName, commandName);
+      return;
+    }
   }
 
   const resourcePath = sourceUri.path;
   if (!resourcePath) {
-    const message = nls.localize(
-      'force_lightning_lwc_preview_file_undefined',
-      resourcePath
-    );
+    const message = nls.localize('force_lightning_lwc_preview_file_undefined');
     showError(new Error(message), logName, commandName);
     return;
   }
@@ -120,192 +123,102 @@ export async function forceLightningLwcPreview(sourceUri: vscode.Uri) {
     return;
   }
 
-  const platformSelectionCode = await vscode.window.showQuickPick(
-    platformInput,
-    {
-      placeHolder: 'Select the platform to preview the component?'
-    }
-  );
-
-  if (!platformSelectionCode) {
+  const platformSelection = await vscode.window.showQuickPick(platformInput, {
+    placeHolder: nls.localize('force_lightning_lwc_preview_platform_selection')
+  });
+  if (!platformSelection) {
     console.log(`${logName}: No valid selection made for preview...`);
     return;
   }
 
-  // use fucntion to make this const
-  let platformSelection = PlatformType.Desktop;
-  if (platformSelectionCode.id === PreviewPlatformType.iOS) {
-    platformSelection = PlatformType.iOS;
-  } else if (platformSelectionCode.id === PreviewPlatformType.Android) {
-    platformSelection = PlatformType.Android;
-  }
-
   const fullUrl = `${DEV_SERVER_PREVIEW_ROUTE}/${componentName}`;
-  let target: string = '';
-  if (platformSelection !== PlatformType.Desktop) {
-    let targetName = await vscode.window.showInputBox({
-      placeHolder:
-        'Enter or Select the name for the target here. Leave Blank for Default.'
+  const desktopSelected = platformSelection.id === PreviewPlatformType.Desktop;
+  let target: string = platformSelection.defaultTargetName;
+  if (!desktopSelected) {
+    let placeholderText = nls.localize(
+      'force_lightning_lwc_preview_target_default'
+    );
+    const deviceConfig = getWorkspaceSettings().get('rememberDevice') || false;
+    const lastTarget = getRememberedDevice(platformSelection);
+
+    // Remember device setting enabled and previous device retrieved.
+    if (deviceConfig && lastTarget) {
+      placeholderText =
+        nls.localize('force_lightning_lwc_preview_target_rememebered') +
+        lastTarget;
+      target = lastTarget;
+    }
+    const targetName = await vscode.window.showInputBox({
+      placeHolder: placeholderText
     });
 
     if (targetName === undefined) {
-      vscode.window.showInformationMessage('Device run cancelled.');
+      vscode.window.showInformationMessage(
+        nls.localize('force_lightning_lwc_preview_device_cancelled')
+      );
       return;
-    } else if (targetName === '') {
-      targetName = platformSelectionCode.defaultTargetName;
     }
-    target = targetName;
-  }
 
-  if (DevServerService.instance.isServerHandlerRegistered()) {
-    switch (platformSelection) {
-      case PlatformType.Desktop: {
-        await handleDesktop(fullUrl, startTime);
-        break;
-      }
-      case PlatformType.iOS: {
-        await handleiOS(fullUrl, startTime, target);
-        break;
-      }
-      case PlatformType.Android: {
-        await handleAndroid(fullUrl, startTime, target);
-        break;
-      }
+    // New target device entered
+    if (targetName !== '') {
+      updateRememberedDevice(platformSelection, targetName);
+      target = targetName;
     }
-  } else {
-    console.log(`${logName}: server was not running, starting...`);
-    const preconditionChecker = new SfdxWorkspaceChecker();
-    const parameterGatherer = new EmptyParametersGatherer();
-    const executor = new ForceLightningLwcStartExecutor({
-      openBrowser: platformSelection === PlatformType.Desktop,
-      fullUrl,
-      platform: platformSelection
-    });
 
-    const commandlet = new SfdxCommandlet(
-      preconditionChecker,
-      parameterGatherer,
-      executor
-    );
+    // Start Server if not running.
+    if (!DevServerService.instance.isServerHandlerRegistered()) {
+      console.log(`${logName}: server was not running, starting...`);
+      const preconditionChecker = new SfdxWorkspaceChecker();
+      const parameterGatherer = new EmptyParametersGatherer();
+      const executor = new ForceLightningLwcStartExecutor({
+        openBrowser: desktopSelected,
+        fullUrl
+      });
 
-    await commandlet.run();
-    telemetryService.sendCommandEvent(logName, startTime);
-  }
-}
+      const commandlet = new SfdxCommandlet(
+        preconditionChecker,
+        parameterGatherer,
+        executor
+      );
 
-async function handleDesktop(fullUrl: string, startTime: [number, number]) {
-  try {
-    await openBrowser(fullUrl);
-    telemetryService.sendCommandEvent(logName, startTime);
-  } catch (e) {
-    showError(e, logName, commandName);
-  }
-}
+      await commandlet.run();
+      telemetryService.sendCommandEvent(logName, startTime);
+    } else if (desktopSelected) {
+      try {
+        await openBrowser(fullUrl);
+        telemetryService.sendCommandEvent(logName, startTime);
+      } catch (e) {
+        showError(e, logName, commandName);
+      }
+      return;
+    }
 
-async function handleiOS(
-  fullUrl: string,
-  startTime: [number, number],
-  targetName: string
-) {
-  console.log(`${logName}: server was not running, starting...`);
-  const command = new SfdxCommandBuilder()
-    .withDescription(commandName)
-    .withArg('force:lightning:lwc:preview')
-    .withFlag('-p', 'iOS')
-    .withFlag('-t', targetName)
-    .withFlag('-f', fullUrl != null ? fullUrl : '')
-    .build();
+    // Launch Mobile Device
+    const mobileCancellationTokenSource = new vscode.CancellationTokenSource();
+    const mobileCancellationToken = mobileCancellationTokenSource.token;
 
-  const cancellationTokenSource = new vscode.CancellationTokenSource();
-  const cancellationToken = cancellationTokenSource.token;
-
-  const executor = new CliCommandExecutor(command, {
-    env: { SFDX_JSON_TO_STDOUT: 'true' }
-  });
-  executor.execute(cancellationToken);
-}
-
-async function handleAndroid(
-  fullUrl: string,
-  startTime: [number, number],
-  targetName: string
-) {
-  console.log(`${logName}: server was not running, starting...`);
-  const command = new SfdxCommandBuilder()
-    .withDescription(commandName)
-    .withArg('force:lightning:lwc:preview')
-    .withFlag('-p', 'Android')
-    .withFlag('-t', targetName)
-    .withFlag('-f', fullUrl != null ? fullUrl : '')
-    .build();
-
-  const cancellationTokenSource = new vscode.CancellationTokenSource();
-  const cancellationToken = cancellationTokenSource.token;
-
-  const executor = new CliCommandExecutor(command, {
-    env: { SFDX_JSON_TO_STDOUT: 'true' }
-  });
-  executor.execute(cancellationToken);
-}
-
-export class MobileLwcStartExecutor extends SfdxCommandletExecutor<{}> {
-  private readonly platformType: PreviewPlatformType;
-  private readonly targetName: string;
-
-  constructor(
-    platformType: PreviewPlatformType = PreviewPlatformType.Desktop,
-    targetName: string
-  ) {
-    super();
-    this.platformType = platformType;
-    this.targetName = targetName;
-  }
-
-  public build(): Command {
-    let command = new SfdxCommandBuilder()
+    const command = new SfdxCommandBuilder()
       .withDescription(commandName)
-      .withArg('force:lightning:lwc:start')
-      .withLogName(logName)
-      // .withJson()
+      .withArg('force:lightning:lwc:preview')
+      .withFlag('-p', platformSelection.platformName)
+      .withFlag('-t', target || platformSelection.defaultTargetName)
+      .withFlag('-f', fullUrl)
       .build();
 
-    if (this.platformType === PreviewPlatformType.iOS) {
-      command = new SfdxCommandBuilder()
-        .withDescription(commandName)
-        .withArg('force:lightning:lwc:preview')
-        .withFlag('-p', 'iOS')
-        .withFlag('-t', 'SFDXSimulator')
-        .withFlag(
-          '-f',
-          this.options.fullUrl != null ? this.options.fullUrl : ''
-        )
-        .build();
-    } else if (this.platformType === PreviewPlatformType.Android) {
-      command = new SfdxCommandBuilder()
-        .withDescription(commandName)
-        .withArg('force:lightning:lwc:preview')
-        .withFlag('-p', 'Android')
-        .withFlag('-t', 'SFDXEmulator')
-        .withFlag(
-          '-f',
-          this.options.fullUrl != null ? this.options.fullUrl : ''
-        )
-        .build();
-    }
-
-    return command;
-  }
-
-  public execute(response: ContinueResponse<{}>): void {
-    const startTime = process.hrtime();
-    const cancellationTokenSource = new vscode.CancellationTokenSource();
-    const cancellationToken = cancellationTokenSource.token;
-
-    const executor = new CliCommandExecutor(this.build(), {
-      cwd: this.executionCwd,
+    const mobileExecutor = new CliCommandExecutor(command, {
       env: { SFDX_JSON_TO_STDOUT: 'true' }
     });
-    const execution = executor.execute(cancellationToken);
-    const executionName = execution.command.toString();
+    mobileExecutor.execute(mobileCancellationToken);
   }
+}
+
+function getRememberedDevice(platform: PreviewQuickPickItem): string {
+  return getGlobalStore().get(`last${platform.platformName}Device`, '');
+}
+
+function updateRememberedDevice(
+  platform: PreviewQuickPickItem,
+  deviceName: string
+) {
+  getGlobalStore().update(`last${platform.platformName}Device`, deviceName);
 }

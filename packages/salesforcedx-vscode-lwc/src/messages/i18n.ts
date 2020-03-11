@@ -55,5 +55,24 @@ export const messages = {
   debug_test_title: 'Debug Test',
   run_test_task_name: 'Run Test',
   watch_test_task_name: 'Watch Test',
-  default_task_name: 'LWC Test'
+  default_task_name: 'LWC Test',
+  force_lightning_lwc_preferences: 'Lightning Web Components',
+  force_lightning_lwc_remember_device_description:
+    'Remember last used mobile device target.',
+  force_lightning_lwc_preview_platform_selection:
+    'Select the platform to preview the component:',
+  force_lightning_lwc_preview_target_default:
+    'Enter the name for the target here. Leave Blank for Default.',
+  force_lightning_lwc_preview_target_rememebered:
+    'Enter the name of a new target or Leave Blank for last used: ',
+  force_lightning_lwc_preview_device_cancelled:
+    'Device target selection cancelled.',
+  force_lightning_lwc_preview_desktop_label: 'Use Desktop Browser',
+  force_lightning_lwc_preview_desktop_description:
+    'Preview Component On Desktop Browser',
+  force_lightning_lwc_preview_ios_label: 'Use iOS Simulator',
+  force_lightning_lwc_preview_ios_description: 'Preview Component On iOS',
+  force_lightning_lwc_preview_android_label: 'Use Android Emulator',
+  force_lightning_lwc_preview_android_description:
+    'Preview Component On Android'
 };

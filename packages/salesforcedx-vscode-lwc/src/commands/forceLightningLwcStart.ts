@@ -35,21 +35,11 @@ const SfdxCommandletExecutor = sfdxCoreExports.SfdxCommandletExecutor;
 const logName = 'force_lightning_lwc_start';
 const commandName = nls.localize(`force_lightning_lwc_start_text`);
 
-export enum PlatformType {
-  Desktop = 1,
-  iOS,
-  Android
-}
-
 export interface ForceLightningLwcStartOptions {
   /** whether to automatically open the browser after server start */
   openBrowser: boolean;
   /** complete url of the page to open in the browser */
   fullUrl?: string;
-
-  platform: PlatformType;
-
-  target?: string;
 }
 
 export class ForceLightningLwcStartExecutor extends SfdxCommandletExecutor<{}> {
@@ -57,8 +47,7 @@ export class ForceLightningLwcStartExecutor extends SfdxCommandletExecutor<{}> {
 
   constructor(
     options: ForceLightningLwcStartOptions = {
-      openBrowser: true,
-      platform: PlatformType.Desktop
+      openBrowser: true
     }
   ) {
     super();
@@ -123,54 +112,6 @@ export class ForceLightningLwcStartExecutor extends SfdxCommandletExecutor<{}> {
 
         if (this.options.openBrowser) {
           await openBrowser(this.options.fullUrl || DEV_SERVER_BASE_URL);
-        } else {
-          const mobileCancellationTokenSource = new vscode.CancellationTokenSource();
-          const mobileCancellationToken = mobileCancellationTokenSource.token;
-
-          if (this.options.platform === PlatformType.iOS) {
-            const command = new SfdxCommandBuilder()
-              .withDescription(commandName)
-              .withArg('force:lightning:lwc:preview')
-              .withFlag('-p', 'iOS')
-              .withFlag(
-                '-t',
-                this.options.target != null
-                  ? this.options.target
-                  : 'SFDXSimulator'
-              )
-              .withFlag(
-                '-f',
-                this.options.fullUrl != null ? this.options.fullUrl : ''
-              )
-              .build();
-
-            const iOSExecutor = new CliCommandExecutor(command, {
-              env: { SFDX_JSON_TO_STDOUT: 'true' }
-            });
-            iOSExecutor.execute(mobileCancellationToken);
-          } else if (this.options.platform === PlatformType.Android) {
-            console.log(`${logName}: server was not running, starting...`);
-            const command = new SfdxCommandBuilder()
-              .withDescription(commandName)
-              .withArg('force:lightning:lwc:preview')
-              .withFlag('-p', 'Android')
-              .withFlag(
-                '-t',
-                this.options.target != null
-                  ? this.options.target
-                  : 'SFDXEmulator'
-              )
-              .withFlag(
-                '-f',
-                this.options.fullUrl != null ? this.options.fullUrl : ''
-              )
-              .build();
-
-            const anroidExecutor = new CliCommandExecutor(command, {
-              env: { SFDX_JSON_TO_STDOUT: 'true' }
-            });
-            anroidExecutor.execute(mobileCancellationToken);
-          }
         }
 
         this.logMetric(execution.command.logName, startTime);
