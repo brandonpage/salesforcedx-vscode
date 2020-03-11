@@ -56,9 +56,6 @@ export const messages = {
   run_test_task_name: 'Run Test',
   watch_test_task_name: 'Watch Test',
   default_task_name: 'LWC Test',
-  force_lightning_lwc_preferences: 'Lightning Web Components',
-  force_lightning_lwc_remember_device_description:
-    'Remember last used mobile device target.',
   force_lightning_lwc_preview_platform_selection:
     'Select the platform to preview the component:',
   force_lightning_lwc_preview_target_default:
