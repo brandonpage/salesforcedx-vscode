@@ -14,6 +14,7 @@ const extensionDirectories = [
   'salesforcedx-vscode-core',
   'salesforcedx-vscode-lightning',
   'salesforcedx-vscode-lwc',
+  'salesforcedx-vscode-lwc-mobile',
   'salesforcedx-vscode-visualforce'
 ];
 
