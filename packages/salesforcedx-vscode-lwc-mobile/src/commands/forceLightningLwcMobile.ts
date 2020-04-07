@@ -115,16 +115,13 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
     placeHolder: nls.localize('force_lightning_lwc_mobile_platform_selection')
   });
   if (!platformSelection) {
-    vscode.window.showInformationMessage(
+    vscode.window.showWarningMessage(
       nls.localize('force_lightning_lwc_mobile_cancelled')
     );
     return;
   }
 
-  // TODO: figure out what this should actually be
-  const fullUrl = `http://localhost:3333/lwc/preview/${componentName}`;
   let target: string = platformSelection.defaultTargetName;
-
   let placeholderText = nls.localize(
     'force_lightning_lwc_mobile_target_default'
   );
@@ -160,15 +157,15 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   const mobileCancellationTokenSource = new vscode.CancellationTokenSource();
   const mobileCancellationToken = mobileCancellationTokenSource.token;
 
-  // TODO: Update the following when new SFDX plugin is ready:
-  // command moving to: force:lightning:local:preview
-  // args: -f -> -d, and to become component path
+  // TODO: Remove `fullUrl` and use `resourcePath` when SFDX plugin is ready.
+  const fullUrl = `http://localhost:3333/lwc/preview/${componentName}`;
+  // TODO: Add setting for loglevel
   const command = new SfdxCommandBuilder()
     .withDescription(commandName)
-    .withArg('force:lightning:lwc:preview')
+    .withArg('force:lightning:local:preview')
     .withFlag('-p', platformSelection.platformName)
     .withFlag('-t', target || platformSelection.defaultTargetName)
-    .withFlag('-f', fullUrl)
+    .withFlag('-d', fullUrl)
     .build();
 
   const mobileExecutor = new CliCommandExecutor(command, {
@@ -176,16 +173,26 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   });
   const execution = mobileExecutor.execute(mobileCancellationToken);
   telemetryService.sendCommandEvent(logName, startTime);
-  channelService.streamCommandStartStop(execution);
-  channelService.showChannelOutput();
-  try {
-    notificationService.showSuccessfulExecution(execution.command.toString());
-  } catch (fixme) {
-    channelService.appendLine('-----------------------------------------');
-    channelService.appendLine(fixme);
-    channelService.appendLine('-----------------------------------------');
-    showError(fixme);
-  }
+
+  execution.processExitSubject.subscribe(async exitCode => {
+    if (exitCode !== 0) {
+      channelService.streamCommandOutput(execution);
+      channelService.showChannelOutput();
+
+      const message =
+        platformSelection.id === PreviewPlatformType.Android
+          ? nls.localize('force_lightning_lwc_mobile_android_failure')
+          : nls.localize('force_lightning_lwc_mobile_ios_failure');
+      showError(new Error(message));
+    } else {
+      notificationService.showSuccessfulExecution(execution.command.toString());
+      const message =
+        platformSelection.id === PreviewPlatformType.Android
+          ? nls.localize('force_lightning_lwc_mobile_android_start')
+          : nls.localize('force_lightning_lwc_mobile_ios_start');
+      vscode.window.showInformationMessage(message);
+    }
+  });
 }
 
 function getRememberedDevice(platform: PreviewQuickPickItem): string {
@@ -202,9 +209,4 @@ function updateRememberedDevice(
 function showError(e: Error) {
   telemetryService.sendException(`${logName}_error`, e.message);
   notificationService.showErrorMessage(e.message);
-  notificationService.showErrorMessage(
-    nls.localize('command_failure', commandName)
-  );
-  channelService.appendLine(`Error: ${e.message}`);
-  channelService.showChannelOutput();
 }

@@ -295,9 +295,7 @@ describe('forceLightningLwcMobile', () => {
 
     sinon.assert.calledWith(
       showErrorMessageStub,
-      sinon.match(
-        nls.localize(`force_lightning_lwc_mobile_file_nonexist`, 'foo')
-      )
+      sinon.match(nls.localize(`force_lightning_lwc_file_nonexist`, 'foo'))
     );
   });
 });

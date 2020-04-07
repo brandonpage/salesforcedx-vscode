@@ -16,9 +16,6 @@
  * If omitted, we will assume _message.
  */
 export const messages = {
-  command_failure: '%s failed to run.',
-  force_lightning_lwc_start_already_running:
-    'The local development server is already running.',
   force_lightning_lwc_mobile_text: 'SFDX: Preview Component Locally on Mobile',
   force_lightning_lwc_preview_file_undefined:
     "Can't find the Lightning Web Components module. Check that %s is the correct file path.",
@@ -38,5 +35,11 @@ export const messages = {
   force_lightning_lwc_mobile_ios_label: 'Use iOS Simulator',
   force_lightning_lwc_mobile_ios_description: 'Preview component on iOS',
   force_lightning_lwc_mobile_android_label: 'Use Android Emulator',
-  force_lightning_lwc_mobile_android_description: 'Preview component on Android'
+  force_lightning_lwc_mobile_android_description:
+    'Preview component on Android',
+  force_lightning_lwc_mobile_android_failure:
+    'Failed to start Android Emulator',
+  force_lightning_lwc_mobile_ios_failure: 'Failed to start iOS Simulator',
+  force_lightning_lwc_mobile_android_start: 'Starting Android Emulator',
+  force_lightning_lwc_mobile_ios_start: 'Starting iOS Simulator'
 };
