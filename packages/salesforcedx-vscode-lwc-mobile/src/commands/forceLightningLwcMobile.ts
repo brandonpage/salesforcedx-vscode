@@ -132,7 +132,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   // Remember device setting enabled and previous device retrieved.
   if (rememberDeviceConfigured && lastTarget) {
     placeholderText = nls.localize(
-      'force_lightning_lwc_preview_target_remembered',
+      'force_lightning_lwc_mobile_target_remembered',
       lastTarget
     );
     target = lastTarget;
