@@ -132,7 +132,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   // Remember device setting enabled and previous device retrieved.
   if (rememberDeviceConfigured && lastTarget) {
     placeholderText = nls.localize(
-      'force_lightning_lwc_preview_target_remembered',
+      'force_lightning_lwc_mobile_target_remembered',
       lastTarget
     );
     target = lastTarget;
@@ -157,7 +157,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   const mobileCancellationTokenSource = new vscode.CancellationTokenSource();
   const mobileCancellationToken = mobileCancellationTokenSource.token;
 
-  // TODO: Remove `fullUrl` and use `resourcePath` when SFDX plugin is ready.
+  // TODO: Remove `fullUrl` and use `componentName` when SFDX plugin is ready.
   const fullUrl = `http://localhost:3333/lwc/preview/${componentName}`;
   // TODO: Add setting for loglevel
   const command = new SfdxCommandBuilder()
@@ -177,8 +177,6 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   execution.processExitSubject.subscribe(async exitCode => {
     if (exitCode !== 0) {
       channelService.streamCommandOutput(execution);
-      channelService.showChannelOutput();
-
       const message =
         platformSelection.id === PreviewPlatformType.Android
           ? nls.localize('force_lightning_lwc_mobile_android_failure')
