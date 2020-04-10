@@ -6,15 +6,18 @@
  */
 
 import {
-  CliCommandExecution,
   CliCommandExecutor,
+  Command,
   CommandBuilder,
+  CommandExecution,
   SfdxCommandBuilder
 } from '@salesforce/salesforcedx-utils-vscode/out/src/cli';
+import { CliCommandExecution } from '@salesforce/salesforcedx-utils-vscode/out/src/cli';
 import { CancellationToken } from '@salesforce/salesforcedx-utils-vscode/out/src/cli/commandExecutor';
 import { expect } from 'chai';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Subject } from 'rxjs/Subject';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import * as vscode from 'vscode';
@@ -28,7 +31,7 @@ import { nls } from '../../../src/messages';
 const sfdxCoreExports = vscode.extensions.getExtension(
   'salesforce.salesforcedx-vscode-core'
 )!.exports;
-const { notificationService } = sfdxCoreExports;
+const { channelService, notificationService } = sfdxCoreExports;
 
 describe('forceLightningLwcMobile', () => {
   let sandbox: SinonSandbox;
@@ -55,10 +58,14 @@ describe('forceLightningLwcMobile', () => {
   let getGlobalStoreStub: sinon.SinonStub<any, vscode.Memento>;
   let cmdWithArgSpy: sinon.SinonSpy<[string], CommandBuilder>;
   let cmdWithFlagSpy: sinon.SinonSpy<[string, string], CommandBuilder>;
-  let executeSpy: sinon.SinonSpy<
+  let mobileExecutorStub: sinon.SinonStub<
     [(CancellationToken | undefined)?],
-    CliCommandExecution
+    CliCommandExecution | MockExecution
   >;
+  let mockExecution: MockExecution;
+  let showWarningMessageSpy: sinon.SinonSpy<any, any>;
+  let successInfoMessageSpy: sinon.SinonSpy<any, any>;
+  let streamCommandOutputSpy: sinon.SinonSpy<any, any>;
 
   const validSourcePath = path.join(
     'dev',
@@ -131,6 +138,28 @@ describe('forceLightningLwcMobile', () => {
     }
   }
 
+  class MockExecution implements CommandExecution {
+    public command: Command;
+    public processExitSubject: Subject<number>;
+    public processErrorSubject: Subject<Error>;
+    public stdoutSubject: Subject<string>;
+    public stderrSubject: Subject<string>;
+    private readonly childProcessPid: any;
+
+    constructor(command: Command) {
+      this.command = command;
+      this.processExitSubject = new Subject<number>();
+      this.processErrorSubject = new Subject<Error>();
+      this.stdoutSubject = new Subject<string>();
+      this.stderrSubject = new Subject<string>();
+      this.childProcessPid = '';
+    }
+
+    public killExecution(signal?: string): Promise<void> {
+      return Promise.resolve();
+    }
+  }
+
   beforeEach(() => {
     sandbox = sinon.createSandbox();
     existsSyncStub = sandbox.stub(fs, 'existsSync');
@@ -141,20 +170,32 @@ describe('forceLightningLwcMobile', () => {
     );
     showQuickPickStub = sandbox.stub(vscode.window, 'showQuickPick');
     showInputBoxStub = sandbox.stub(vscode.window, 'showInputBox');
-
     getConfigurationStub = sandbox.stub(utils, 'getWorkspaceSettings');
     getGlobalStoreStub = sandbox.stub(utils, 'getGlobalStore');
-
     cmdWithArgSpy = sandbox.spy(SfdxCommandBuilder.prototype, 'withArg');
     cmdWithFlagSpy = sandbox.spy(SfdxCommandBuilder.prototype, 'withFlag');
-    executeSpy = sandbox.spy(CliCommandExecutor.prototype, 'execute');
+    mockExecution = new MockExecution(new SfdxCommandBuilder().build());
+    mobileExecutorStub = sinon.stub(CliCommandExecutor.prototype, 'execute');
+    mobileExecutorStub.returns(mockExecution);
+    showWarningMessageSpy = sandbox.spy(vscode.window, 'showWarningMessage');
+    successInfoMessageSpy = sandbox.spy(
+      vscode.window,
+      'showInformationMessage'
+    );
+    streamCommandOutputSpy = sandbox.stub(
+      channelService,
+      'streamCommandOutput'
+    );
   });
 
   afterEach(() => {
     sandbox.restore();
     cmdWithArgSpy.restore();
     cmdWithFlagSpy.restore();
-    executeSpy.restore();
+    showWarningMessageSpy.restore();
+    successInfoMessageSpy.restore();
+    mobileExecutorStub.restore();
+    streamCommandOutputSpy.restore();
   });
 
   it('calls SFDX preview with the correct url for files', async () => {
@@ -170,6 +211,7 @@ describe('forceLightningLwcMobile', () => {
     showQuickPickStub.resolves(androidQuickPick);
     showInputBoxStub.resolves('');
     await forceLightningLwcMobile(validSourceUri);
+    mockExecution.processExitSubject.next(0);
 
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
@@ -190,10 +232,8 @@ describe('forceLightningLwcMobile', () => {
       '-d',
       'http://localhost:3333/lwc/preview/c/foo'
     ]);
-    expect(
-      executeSpy.callCount,
-      'Expected execute to be called once.'
-    ).to.equal(1);
+    sinon.assert.calledOnce(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(1);
   });
 
   it('calls SFDX preview with the correct url for directories', async () => {
@@ -220,6 +260,7 @@ describe('forceLightningLwcMobile', () => {
     showQuickPickStub.resolves(iOSQuickPick);
     showInputBoxStub.resolves('');
     await forceLightningLwcMobile(sourceUri);
+    mockExecution.processExitSubject.next(0);
 
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
@@ -237,10 +278,8 @@ describe('forceLightningLwcMobile', () => {
       '-d',
       'http://localhost:3333/lwc/preview/c/foo'
     ]);
-    expect(
-      executeSpy.callCount,
-      'Expected execute to be called once.'
-    ).to.equal(1);
+    sinon.assert.calledOnce(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(1);
   });
 
   it('shows an error when source path is not recognized as an lwc module file', async () => {
@@ -266,6 +305,8 @@ describe('forceLightningLwcMobile', () => {
         nls.localize(`force_lightning_lwc_preview_unsupported`, 'foo')
       )
     );
+    sinon.assert.notCalled(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(0);
   });
 
   it('shows an error when source path does not exist', async () => {
@@ -284,6 +325,8 @@ describe('forceLightningLwcMobile', () => {
       showErrorMessageStub,
       sinon.match(nls.localize(`force_lightning_lwc_file_nonexist`, 'foo'))
     );
+    sinon.assert.notCalled(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(0);
   });
 
   it('calls SFDX preview with specified Android device name', async () => {
@@ -311,6 +354,7 @@ describe('forceLightningLwcMobile', () => {
     showQuickPickStub.resolves(androidQuickPick);
     showInputBoxStub.resolves(deviceName);
     await forceLightningLwcMobile(sourceUri);
+    mockExecution.processExitSubject.next(0);
 
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
@@ -322,10 +366,8 @@ describe('forceLightningLwcMobile', () => {
       '-t',
       deviceName
     ]);
-    expect(
-      executeSpy.callCount,
-      'Expected execute to be called once.'
-    ).to.equal(1);
+    sinon.assert.calledOnce(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(1);
   });
 
   it('calls SFDX preview with specified iOS device name', async () => {
@@ -342,6 +384,7 @@ describe('forceLightningLwcMobile', () => {
     showQuickPickStub.resolves(iOSQuickPick);
     showInputBoxStub.resolves(deviceName);
     await forceLightningLwcMobile(validSourceUri);
+    mockExecution.processExitSubject.next(0);
 
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
@@ -350,10 +393,8 @@ describe('forceLightningLwcMobile', () => {
       '-t',
       deviceName
     ]);
-    expect(
-      executeSpy.callCount,
-      'Expected execute to be called once.'
-    ).to.equal(1);
+    sinon.assert.calledOnce(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(1);
   });
 
   it('calls SFDX preview with remembered Android device name', async () => {
@@ -369,6 +410,7 @@ describe('forceLightningLwcMobile', () => {
     showQuickPickStub.resolves(androidQuickPick);
     showInputBoxStub.resolves('');
     await forceLightningLwcMobile(validSourceUri);
+    mockExecution.processExitSubject.next(0);
 
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
@@ -380,10 +422,8 @@ describe('forceLightningLwcMobile', () => {
       '-t',
       rememberedAndroidDevice
     ]);
-    expect(
-      executeSpy.callCount,
-      'Expected execute to be called once.'
-    ).to.equal(1);
+    sinon.assert.calledOnce(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(1);
   });
 
   it('calls SFDX preview with remembered iOS device name', async () => {
@@ -399,6 +439,7 @@ describe('forceLightningLwcMobile', () => {
     showQuickPickStub.resolves(iOSQuickPick);
     showInputBoxStub.resolves('');
     await forceLightningLwcMobile(validSourceUri);
+    mockExecution.processExitSubject.next(0);
 
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
@@ -407,10 +448,8 @@ describe('forceLightningLwcMobile', () => {
       '-t',
       rememberediOSDevice
     ]);
-    expect(
-      executeSpy.callCount,
-      'Expected execute to be called once.'
-    ).to.equal(1);
+    sinon.assert.calledOnce(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(1);
   });
 
   it('shows warning when you cancel Android device name input', async () => {
@@ -426,21 +465,15 @@ describe('forceLightningLwcMobile', () => {
     showQuickPickStub.resolves(androidQuickPick);
     // This simulates the user hitting the escape key to cancel input.
     showInputBoxStub.resolves(undefined);
-    const showWarningSpy = sandbox.spy(vscode.window, 'showWarningMessage');
     await forceLightningLwcMobile(validSourceUri);
 
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
     expect(cmdWithArgSpy.callCount).to.equal(0);
     expect(cmdWithFlagSpy.callCount).to.equal(0);
+    sinon.assert.notCalled(mobileExecutorStub);
     expect(
-      executeSpy.callCount,
-      'Expected execute to be called once.'
-    ).to.equal(0);
-
-    expect(showWarningSpy.callCount).to.equal(0);
-    expect(
-      showWarningSpy.calledWith(
+      showWarningMessageSpy.calledWith(
         nls.localize('force_lightning_lwc_mobile_device_cancelled')
       )
     );
@@ -459,25 +492,67 @@ describe('forceLightningLwcMobile', () => {
     showQuickPickStub.resolves(iOSQuickPick);
     // This simulates the user hitting the escape key to cancel input.
     showInputBoxStub.resolves(undefined);
-    const showWarningSpy = sandbox.spy(vscode.window, 'showWarningMessage');
     await forceLightningLwcMobile(validSourceUri);
 
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
     expect(cmdWithArgSpy.callCount).to.equal(0);
     expect(cmdWithFlagSpy.callCount).to.equal(0);
+    sinon.assert.notCalled(mobileExecutorStub);
     expect(
-      executeSpy.callCount,
-      'Expected execute to be called once.'
-    ).to.equal(0);
-
-    expect(showWarningSpy.callCount).to.equal(0);
-    expect(
-      showWarningSpy.calledWith(
+      showWarningMessageSpy.calledWith(
         nls.localize('force_lightning_lwc_mobile_device_cancelled')
       )
     );
   });
 
-  // TODO:  Stub SFDX execution to test setup error scenarios.
+  it('shows error in console when Android SFDX execution fails', async () => {
+    existsSyncStub.returns(true);
+    lstatSyncStub.returns({
+      isDirectory() {
+        return false;
+      }
+    } as fs.Stats);
+
+    getConfigurationStub.returns(new MockWorkspace(false));
+    getGlobalStoreStub.returns(new MockMemento());
+    showQuickPickStub.resolves(androidQuickPick);
+    showInputBoxStub.resolves('');
+    await forceLightningLwcMobile(validSourceUri);
+    mockExecution.processExitSubject.next(1);
+
+    sinon.assert.calledOnce(mobileExecutorStub);
+    sinon.assert.calledOnce(showErrorMessageStub);
+    sinon.assert.calledWith(
+      showErrorMessageStub,
+      sinon.match(nls.localize('force_lightning_lwc_mobile_android_failure'))
+    );
+    sinon.assert.calledOnce(streamCommandOutputSpy);
+    expect(successInfoMessageSpy.callCount).to.equal(0);
+  });
+
+  it('shows error in console when iOS SFDX execution fails', async () => {
+    existsSyncStub.returns(true);
+    lstatSyncStub.returns({
+      isDirectory() {
+        return false;
+      }
+    } as fs.Stats);
+
+    getConfigurationStub.returns(new MockWorkspace(false));
+    getGlobalStoreStub.returns(new MockMemento());
+    showQuickPickStub.resolves(iOSQuickPick);
+    showInputBoxStub.resolves('');
+    await forceLightningLwcMobile(validSourceUri);
+    mockExecution.processExitSubject.next(1);
+
+    sinon.assert.calledOnce(mobileExecutorStub);
+    sinon.assert.calledOnce(showErrorMessageStub);
+    sinon.assert.calledWith(
+      showErrorMessageStub,
+      sinon.match(nls.localize('force_lightning_lwc_mobile_ios_failure'))
+    );
+    sinon.assert.calledOnce(streamCommandOutputSpy);
+    expect(successInfoMessageSpy.callCount).to.equal(0);
+  });
 });
