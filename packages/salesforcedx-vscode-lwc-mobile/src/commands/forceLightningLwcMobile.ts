@@ -157,15 +157,13 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   const mobileCancellationTokenSource = new vscode.CancellationTokenSource();
   const mobileCancellationToken = mobileCancellationTokenSource.token;
 
-  // TODO: Remove `fullUrl` and use `componentName` when SFDX plugin is ready.
-  const fullUrl = `http://localhost:3333/lwc/preview/${componentName}`;
   // TODO: Add setting for loglevel
   const command = new SfdxCommandBuilder()
     .withDescription(commandName)
     .withArg('force:lightning:local:preview')
     .withFlag('-p', platformSelection.platformName)
     .withFlag('-t', target || platformSelection.defaultTargetName)
-    .withFlag('-d', fullUrl)
+    .withFlag('-d', componentName)
     .build();
 
   const mobileExecutor = new CliCommandExecutor(command, {
@@ -173,15 +171,23 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   });
   const execution = mobileExecutor.execute(mobileCancellationToken);
   telemetryService.sendCommandEvent(logName, startTime);
+  channelService.streamCommandOutput(execution);
+  channelService.showChannelOutput();
 
   execution.processExitSubject.subscribe(async exitCode => {
     if (exitCode !== 0) {
-      channelService.streamCommandOutput(execution);
       const message =
         platformSelection.id === PreviewPlatformType.Android
           ? nls.localize('force_lightning_lwc_mobile_android_failure')
           : nls.localize('force_lightning_lwc_mobile_ios_failure');
       showError(new Error(message));
+
+      // Error code 127 means the lwc on mobile sfdx plugin is not installed.
+      if (exitCode === 127) {
+        channelService.appendLine(
+          nls.localize('force_lightning_lwc_mobile_no_plugin')
+        );
+      }
     } else {
       notificationService.showSuccessfulExecution(execution.command.toString());
       const message =

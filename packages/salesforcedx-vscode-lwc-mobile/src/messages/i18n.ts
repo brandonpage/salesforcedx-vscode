@@ -17,6 +17,8 @@
  */
 export const messages = {
   force_lightning_lwc_mobile_text: 'SFDX: Preview Component Locally on Mobile',
+  force_lightning_lwc_mobile_no_plugin:
+    'To run this command, first install the @salesforce/lwc-dev-mobile plugin.',
   force_lightning_lwc_preview_file_undefined:
     "Can't find the Lightning Web Components module. Check that %s is the correct file path.",
   force_lightning_lwc_file_nonexist:
