@@ -156,14 +156,13 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
 
   const mobileCancellationTokenSource = new vscode.CancellationTokenSource();
   const mobileCancellationToken = mobileCancellationTokenSource.token;
-
-  // TODO: Add setting for loglevel
   const command = new SfdxCommandBuilder()
     .withDescription(commandName)
     .withArg('force:lightning:local:preview')
     .withFlag('-p', platformSelection.platformName)
     .withFlag('-t', target || platformSelection.defaultTargetName)
     .withFlag('-d', componentName)
+    .withFlag('--loglevel', getWorkspaceSettings().get('loglevel') || 'warn')
     .build();
 
   const mobileExecutor = new CliCommandExecutor(command, {
