@@ -103,16 +103,25 @@ describe('forceLightningLwcMobile', () => {
   class MockWorkspace implements vscode.WorkspaceConfiguration {
     // tslint:disable-next-line:member-access
     shouldRemember = false;
+    // tslint:disable-next-line:member-access
+    loglevel = 'warn';
 
-    constructor(shouldRemember: boolean) {
+    constructor(shouldRemember: boolean, loglevel?: string) {
       this.shouldRemember = shouldRemember;
+      if (loglevel !== undefined) {
+        this.loglevel = loglevel;
+      }
     }
 
     readonly [key: string]: any;
     public get<T>(section: string): T | undefined;
     public get<T>(section: string, defaultValue: T): T;
     public get(section: any, defaultValue?: any) {
-      return this.shouldRemember;
+      if (section === 'loglevel') {
+        return this.loglevel;
+      } else {
+        return this.shouldRemember;
+      }
     }
     public has(section: string): boolean {
       return this.shouldRemember;
@@ -222,7 +231,7 @@ describe('forceLightningLwcMobile', () => {
     expect(cmdWithArgSpy.getCall(0).args[0]).equals(
       'force:lightning:local:preview'
     );
-    expect(cmdWithFlagSpy.callCount).to.equal(3);
+    expect(cmdWithFlagSpy.callCount).to.equal(4);
     expect(cmdWithFlagSpy.getCall(0).args).to.have.same.members([
       '-p',
       'Android'
@@ -234,6 +243,10 @@ describe('forceLightningLwcMobile', () => {
     expect(cmdWithFlagSpy.getCall(2).args).to.have.same.members([
       '-d',
       'c/foo'
+    ]);
+    expect(cmdWithFlagSpy.getCall(3).args).to.have.same.members([
+      '--loglevel',
+      'warn'
     ]);
     sinon.assert.calledOnce(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(1);
@@ -271,7 +284,7 @@ describe('forceLightningLwcMobile', () => {
     expect(cmdWithArgSpy.getCall(0).args[0]).equals(
       'force:lightning:local:preview'
     );
-    expect(cmdWithFlagSpy.callCount).to.equal(3);
+    expect(cmdWithFlagSpy.callCount).to.equal(4);
     expect(cmdWithFlagSpy.getCall(0).args).to.have.same.members(['-p', 'iOS']);
     expect(cmdWithFlagSpy.getCall(1).args).to.have.same.members([
       '-t',
@@ -280,6 +293,10 @@ describe('forceLightningLwcMobile', () => {
     expect(cmdWithFlagSpy.getCall(2).args).to.have.same.members([
       '-d',
       'c/foo'
+    ]);
+    expect(cmdWithFlagSpy.getCall(3).args).to.have.same.members([
+      '--loglevel',
+      'warn'
     ]);
     sinon.assert.calledOnce(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(1);
@@ -590,5 +607,47 @@ describe('forceLightningLwcMobile', () => {
         nls.localize('force_lightning_lwc_mobile_no_plugin')
       )
     );
+  });
+
+  it('correct log level is used when the setting is changed', async () => {
+    existsSyncStub.returns(true);
+    lstatSyncStub.returns({
+      isDirectory() {
+        return false;
+      }
+    } as fs.Stats);
+
+    getConfigurationStub.returns(new MockWorkspace(false, 'debug'));
+    getGlobalStoreStub.returns(new MockMemento());
+    showQuickPickStub.resolves(androidQuickPick);
+    showInputBoxStub.resolves('');
+    await forceLightningLwcMobile(validSourceUri);
+    mockExecution.processExitSubject.next(0);
+
+    sinon.assert.calledOnce(showQuickPickStub);
+    sinon.assert.calledOnce(showInputBoxStub);
+    expect(cmdWithArgSpy.callCount).to.equal(1);
+    expect(cmdWithArgSpy.getCall(0).args[0]).equals(
+      'force:lightning:local:preview'
+    );
+    expect(cmdWithFlagSpy.callCount).to.equal(4);
+    expect(cmdWithFlagSpy.getCall(0).args).to.have.same.members([
+      '-p',
+      'Android'
+    ]);
+    expect(cmdWithFlagSpy.getCall(1).args).to.have.same.members([
+      '-t',
+      'SFDXEmulator'
+    ]);
+    expect(cmdWithFlagSpy.getCall(2).args).to.have.same.members([
+      '-d',
+      'c/foo'
+    ]);
+    expect(cmdWithFlagSpy.getCall(3).args).to.have.same.members([
+      '--loglevel',
+      'debug'
+    ]);
+    sinon.assert.calledOnce(mobileExecutorStub);
+    expect(successInfoMessageSpy.callCount).to.equal(1);
   });
 });

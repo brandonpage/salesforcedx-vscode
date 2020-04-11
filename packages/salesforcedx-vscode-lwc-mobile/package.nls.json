@@ -2,5 +2,6 @@
   "force_lightning_lwc_mobile_text": "SFDX: Preview Component Locally on Mobile",
   "force_lightning_lwc_mobile_test_view_name": "LWC on Mobile Preview Tests",
   "force_lightning_lwc_mobile_preferences": "Lightning Web Components Preview on Mobile",
-  "force_lightning_lwc_mobile_remember_device_description": "Remember most recently used mobile device target."
+  "force_lightning_lwc_mobile_remember_device_description": "Remember most recently used mobile device target.",
+  "force_lightning_lwc_mobile_log_level": "Log level used when calling SFDX Preview on Mobile command."
 }
