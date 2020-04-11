@@ -66,6 +66,7 @@ describe('forceLightningLwcMobile', () => {
   let showWarningMessageSpy: sinon.SinonSpy<any, any>;
   let successInfoMessageSpy: sinon.SinonSpy<any, any>;
   let streamCommandOutputSpy: sinon.SinonSpy<any, any>;
+  let appendLineSpy: sinon.SinonSpy<any, any>;
 
   const validSourcePath = path.join(
     'dev',
@@ -186,6 +187,7 @@ describe('forceLightningLwcMobile', () => {
       channelService,
       'streamCommandOutput'
     );
+    appendLineSpy = sinon.spy(channelService, 'appendLine');
   });
 
   afterEach(() => {
@@ -196,6 +198,7 @@ describe('forceLightningLwcMobile', () => {
     successInfoMessageSpy.restore();
     mobileExecutorStub.restore();
     streamCommandOutputSpy.restore();
+    appendLineSpy.restore();
   });
 
   it('calls SFDX preview with the correct url for files', async () => {
@@ -230,7 +233,7 @@ describe('forceLightningLwcMobile', () => {
     ]);
     expect(cmdWithFlagSpy.getCall(2).args).to.have.same.members([
       '-d',
-      'http://localhost:3333/lwc/preview/c/foo'
+      'c/foo'
     ]);
     sinon.assert.calledOnce(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(1);
@@ -276,7 +279,7 @@ describe('forceLightningLwcMobile', () => {
     ]);
     expect(cmdWithFlagSpy.getCall(2).args).to.have.same.members([
       '-d',
-      'http://localhost:3333/lwc/preview/c/foo'
+      'c/foo'
     ]);
     sinon.assert.calledOnce(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(1);
@@ -554,5 +557,38 @@ describe('forceLightningLwcMobile', () => {
     );
     sinon.assert.calledOnce(streamCommandOutputSpy);
     expect(successInfoMessageSpy.callCount).to.equal(0);
+  });
+
+  it('shows install message if sfdx plugin is not installed', async () => {
+    existsSyncStub.returns(true);
+    lstatSyncStub.returns({
+      isDirectory() {
+        return false;
+      }
+    } as fs.Stats);
+
+    getConfigurationStub.returns(new MockWorkspace(false));
+    getGlobalStoreStub.returns(new MockMemento());
+    showQuickPickStub.resolves(androidQuickPick);
+    showInputBoxStub.resolves('');
+
+    await forceLightningLwcMobile(validSourceUri);
+    mockExecution.processExitSubject.next(127);
+
+    sinon.assert.calledOnce(mobileExecutorStub);
+    sinon.assert.calledOnce(showErrorMessageStub);
+    sinon.assert.calledWith(
+      showErrorMessageStub,
+      sinon.match(nls.localize('force_lightning_lwc_mobile_android_failure'))
+    );
+    sinon.assert.calledOnce(streamCommandOutputSpy);
+    expect(successInfoMessageSpy.callCount).to.equal(0);
+
+    sinon.assert.calledOnce(appendLineSpy);
+    expect(
+      appendLineSpy.calledWith(
+        nls.localize('force_lightning_lwc_mobile_no_plugin')
+      )
+    );
   });
 });
