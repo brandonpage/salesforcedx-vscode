@@ -72,34 +72,46 @@
   ],
   "contributes": {
     "views": {
-      "test": [{
-        "id": "sfdx.force.lightning.lwc.mobile.test.view",
-        "name": "%force_lightning_lwc_mobile_test_view_name%",
-        "when": "sfdx:project_opened"
-      }]
+      "test": [
+        {
+          "id": "sfdx.force.lightning.lwc.mobile.test.view",
+          "name": "%force_lightning_lwc_mobile_test_view_name%",
+          "when": "sfdx:project_opened"
+        }
+      ]
     },
     "menus": {
-      "editor/context": [{
-        "command": "sfdx.force.lightning.lwc.mobile",
-        "when": "sfdx:project_opened && resource =~ /.*/lwc/[^/]+(/[^/]+\\.(html|css|js))?$/"
-      }],
-      "editor/title/context": [{
-        "command": "sfdx.force.lightning.lwc.mobile",
-        "when": "sfdx:project_opened && resource =~ /.*/lwc/[^/]+(/[^/]+\\.(html|css|js))?$/"
-      }],
-      "explorer/context": [{
-        "command": "sfdx.force.lightning.lwc.mobile",
-        "when": "sfdx:project_opened && resource =~ /.*/lwc/[^/]+(/[^/]+\\.(html|css|js))?$/"
-      }],
-      "commandPalette": [{
-        "command": "sfdx.force.lightning.lwc.mobile",
-        "when": "sfdx:project_opened && resource =~ /.*/lwc/[^/]+(/[^/]+\\.(html|css|js))?$/"
-      }]
+      "editor/context": [
+        {
+          "command": "sfdx.force.lightning.lwc.mobile",
+          "when": "sfdx:project_opened && resource =~ /.*/lwc/[^/]+(/[^/]+\\.(html|css|js))?$/"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "sfdx.force.lightning.lwc.mobile",
+          "when": "sfdx:project_opened && resource =~ /.*/lwc/[^/]+(/[^/]+\\.(html|css|js))?$/"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "sfdx.force.lightning.lwc.mobile",
+          "when": "sfdx:project_opened && resource =~ /.*/lwc/[^/]+(/[^/]+\\.(html|css|js))?$/"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "sfdx.force.lightning.lwc.mobile",
+          "when": "sfdx:project_opened && resource =~ /.*/lwc/[^/]+(/[^/]+\\.(html|css|js))?$/"
+        }
+      ]
     },
-    "commands": [{
-      "command": "sfdx.force.lightning.lwc.mobile",
-      "title": "%force_lightning_lwc_mobile_text%"
-    }],
+    "commands": [
+      {
+        "command": "sfdx.force.lightning.lwc.mobile",
+        "title": "%force_lightning_lwc_mobile_text%"
+      }
+    ],
     "configuration": {
       "type": "object",
       "title": "%force_lightning_lwc_mobile_preferences%",
@@ -109,7 +121,7 @@
           "default": true,
           "description": "%force_lightning_lwc_mobile_remember_device_description%"
         },
-        "salesforcedx-vscode-lwc-mobile.loglevel": {
+        "salesforcedx-vscode-lwc-mobile.logLevel": {
           "type": "string",
           "description": "%force_lightning_lwc_mobile_log_level%",
           "enum": [

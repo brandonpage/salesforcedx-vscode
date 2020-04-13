@@ -322,7 +322,7 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.calledWith(
       showErrorMessageStub,
       sinon.match(
-        nls.localize(`force_lightning_lwc_preview_unsupported`, 'foo')
+        nls.localize(`force_lightning_lwc_mobile_preview_unsupported`, 'foo')
       )
     );
     sinon.assert.notCalled(mobileExecutorStub);
@@ -343,7 +343,9 @@ describe('forceLightningLwcMobile', () => {
 
     sinon.assert.calledWith(
       showErrorMessageStub,
-      sinon.match(nls.localize(`force_lightning_lwc_file_nonexist`, 'foo'))
+      sinon.match(
+        nls.localize(`force_lightning_lwc_mobile_file_nonexist`, 'foo')
+      )
     );
     sinon.assert.notCalled(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(0);
@@ -388,6 +390,11 @@ describe('forceLightningLwcMobile', () => {
     ]);
     sinon.assert.calledOnce(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(1);
+    expect(
+      successInfoMessageSpy.calledWith(
+        nls.localize('force_lightning_lwc_mobile_android_start', deviceName)
+      )
+    );
   });
 
   it('calls SFDX preview with specified iOS device name', async () => {
@@ -415,6 +422,11 @@ describe('forceLightningLwcMobile', () => {
     ]);
     sinon.assert.calledOnce(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(1);
+    expect(
+      successInfoMessageSpy.calledWith(
+        nls.localize('force_lightning_lwc_mobile_ios_start', deviceName)
+      )
+    );
   });
 
   it('calls SFDX preview with remembered Android device name', async () => {
@@ -444,6 +456,14 @@ describe('forceLightningLwcMobile', () => {
     ]);
     sinon.assert.calledOnce(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(1);
+    expect(
+      successInfoMessageSpy.calledWith(
+        nls.localize(
+          'force_lightning_lwc_mobile_android_start',
+          rememberedAndroidDevice
+        )
+      )
+    );
   });
 
   it('calls SFDX preview with remembered iOS device name', async () => {
@@ -470,6 +490,14 @@ describe('forceLightningLwcMobile', () => {
     ]);
     sinon.assert.calledOnce(mobileExecutorStub);
     expect(successInfoMessageSpy.callCount).to.equal(1);
+    expect(
+      successInfoMessageSpy.calledWith(
+        nls.localize(
+          'force_lightning_lwc_mobile_android_start',
+          rememberediOSDevice
+        )
+      )
+    );
   });
 
   it('shows warning when you cancel Android device name input', async () => {
@@ -494,7 +522,7 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.notCalled(mobileExecutorStub);
     expect(
       showWarningMessageSpy.calledWith(
-        nls.localize('force_lightning_lwc_mobile_device_cancelled')
+        nls.localize('force_lightning_lwc_mobile_android_device_cancelled')
       )
     );
   });
@@ -521,7 +549,7 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.notCalled(mobileExecutorStub);
     expect(
       showWarningMessageSpy.calledWith(
-        nls.localize('force_lightning_lwc_mobile_device_cancelled')
+        nls.localize('force_lightning_lwc_mobile_ios_device_cancelled')
       )
     );
   });
@@ -545,7 +573,12 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.calledOnce(showErrorMessageStub);
     sinon.assert.calledWith(
       showErrorMessageStub,
-      sinon.match(nls.localize('force_lightning_lwc_mobile_android_failure'))
+      sinon.match(
+        nls.localize(
+          'force_lightning_lwc_mobile_android_failure',
+          androidQuickPick.defaultTargetName
+        )
+      )
     );
     sinon.assert.calledOnce(streamCommandOutputSpy);
     expect(successInfoMessageSpy.callCount).to.equal(0);
@@ -570,7 +603,12 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.calledOnce(showErrorMessageStub);
     sinon.assert.calledWith(
       showErrorMessageStub,
-      sinon.match(nls.localize('force_lightning_lwc_mobile_ios_failure'))
+      sinon.match(
+        nls.localize(
+          'force_lightning_lwc_mobile_ios_failure',
+          iOSQuickPick.defaultTargetName
+        )
+      )
     );
     sinon.assert.calledOnce(streamCommandOutputSpy);
     expect(successInfoMessageSpy.callCount).to.equal(0);
@@ -596,7 +634,12 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.calledOnce(showErrorMessageStub);
     sinon.assert.calledWith(
       showErrorMessageStub,
-      sinon.match(nls.localize('force_lightning_lwc_mobile_android_failure'))
+      sinon.match(
+        nls.localize(
+          'force_lightning_lwc_mobile_android_failure',
+          androidQuickPick.defaultTargetName
+        )
+      )
     );
     sinon.assert.calledOnce(streamCommandOutputSpy);
     expect(successInfoMessageSpy.callCount).to.equal(0);
