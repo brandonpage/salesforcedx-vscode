@@ -90,7 +90,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
 
   if (!fs.existsSync(resourcePath)) {
     const message = nls.localize(
-      'force_lightning_lwc_file_nonexist',
+      'force_lightning_lwc_mobile_file_nonexist',
       resourcePath
     );
     showError(new Error(message));
@@ -104,7 +104,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
     : componentUtil.moduleFromFile(resourcePath, isSFDX);
   if (!componentName) {
     const message = nls.localize(
-      'force_lightning_lwc_preview_unsupported',
+      'force_lightning_lwc_mobile_preview_unsupported',
       resourcePath
     );
     showError(new Error(message));
@@ -122,19 +122,21 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   }
 
   let target: string = platformSelection.defaultTargetName;
-  let placeholderText = nls.localize(
-    'force_lightning_lwc_mobile_target_default'
-  );
+  let placeholderText =
+    platformSelection.id === PreviewPlatformType.Android
+      ? nls.localize('force_lightning_lwc_mobile_android_target_default')
+      : nls.localize('force_lightning_lwc_mobile_ios_target_default');
   const rememberDeviceConfigured =
     getWorkspaceSettings().get('rememberDevice') || false;
   const lastTarget = getRememberedDevice(platformSelection);
 
   // Remember device setting enabled and previous device retrieved.
   if (rememberDeviceConfigured && lastTarget) {
-    placeholderText = nls.localize(
-      'force_lightning_lwc_mobile_target_remembered',
-      lastTarget
-    );
+    const message =
+      platformSelection.id === PreviewPlatformType.Android
+        ? 'force_lightning_lwc_mobile_android_target_remembered'
+        : 'force_lightning_lwc_mobile_ios_target_remembered';
+    placeholderText = nls.localize(message, lastTarget);
     target = lastTarget;
   }
   const targetName = await vscode.window.showInputBox({
@@ -143,7 +145,9 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
 
   if (targetName === undefined) {
     vscode.window.showInformationMessage(
-      nls.localize('force_lightning_lwc_mobile_device_cancelled')
+      platformSelection.id === PreviewPlatformType.Android
+        ? nls.localize('force_lightning_lwc_mobile_android_device_cancelled')
+        : nls.localize('force_lightning_lwc_mobile_ios_device_cancelled')
     );
     return;
   }
@@ -156,13 +160,14 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
 
   const mobileCancellationTokenSource = new vscode.CancellationTokenSource();
   const mobileCancellationToken = mobileCancellationTokenSource.token;
+  const targetUsed = target || platformSelection.defaultTargetName;
   const command = new SfdxCommandBuilder()
     .withDescription(commandName)
     .withArg('force:lightning:local:preview')
     .withFlag('-p', platformSelection.platformName)
-    .withFlag('-t', target || platformSelection.defaultTargetName)
+    .withFlag('-t', targetUsed)
     .withFlag('-d', componentName)
-    .withFlag('--loglevel', getWorkspaceSettings().get('loglevel') || 'warn')
+    .withFlag('--loglevel', getWorkspaceSettings().get('logLevel') || 'warn')
     .build();
 
   const mobileExecutor = new CliCommandExecutor(command, {
@@ -177,8 +182,11 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
     if (exitCode !== 0) {
       const message =
         platformSelection.id === PreviewPlatformType.Android
-          ? nls.localize('force_lightning_lwc_mobile_android_failure')
-          : nls.localize('force_lightning_lwc_mobile_ios_failure');
+          ? nls.localize(
+              'force_lightning_lwc_mobile_android_failure',
+              targetUsed
+            )
+          : nls.localize('force_lightning_lwc_mobile_ios_failure', targetUsed);
       showError(new Error(message));
 
       // Error code 127 means the lwc on mobile sfdx plugin is not installed.
@@ -191,8 +199,8 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
       notificationService.showSuccessfulExecution(execution.command.toString());
       const message =
         platformSelection.id === PreviewPlatformType.Android
-          ? nls.localize('force_lightning_lwc_mobile_android_start')
-          : nls.localize('force_lightning_lwc_mobile_ios_start');
+          ? nls.localize('force_lightning_lwc_mobile_android_start', targetUsed)
+          : nls.localize('force_lightning_lwc_mobile_ios_start', targetUsed);
       vscode.window.showInformationMessage(message);
     }
   });
