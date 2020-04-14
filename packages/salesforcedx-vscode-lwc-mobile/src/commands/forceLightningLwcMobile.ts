@@ -167,7 +167,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
     .withFlag('-p', platformSelection.platformName)
     .withFlag('-t', targetUsed)
     .withFlag('-d', componentName)
-    .withFlag('--loglevel', getWorkspaceSettings().get('loglevel') || 'warn')
+    .withFlag('--loglevel', getWorkspaceSettings().get('logLevel') || 'warn')
     .build();
 
   const mobileExecutor = new CliCommandExecutor(command, {
