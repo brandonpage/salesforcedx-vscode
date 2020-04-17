@@ -23,8 +23,12 @@ import { SinonSandbox } from 'sinon';
 import * as vscode from 'vscode';
 import * as utils from '../../../src/';
 import {
+  defaultLogLevel,
   forceLightningLwcMobile,
-  platformInput
+  logLevelKey,
+  platformInput,
+  rememberDeviceKey,
+  sfdxPreviewCommand
 } from '../../../src/commands/forceLightningLwcMobile';
 import { nls } from '../../../src/messages';
 
@@ -104,7 +108,7 @@ describe('forceLightningLwcMobile', () => {
     // tslint:disable-next-line:member-access
     shouldRemember = false;
     // tslint:disable-next-line:member-access
-    loglevel = 'warn';
+    loglevel = defaultLogLevel;
 
     constructor(shouldRemember: boolean, loglevel?: string) {
       this.shouldRemember = shouldRemember;
@@ -117,10 +121,12 @@ describe('forceLightningLwcMobile', () => {
     public get<T>(section: string): T | undefined;
     public get<T>(section: string, defaultValue: T): T;
     public get(section: any, defaultValue?: any) {
-      if (section === 'loglevel') {
+      if (section === logLevelKey) {
         return this.loglevel;
-      } else {
+      } else if (section === rememberDeviceKey) {
         return this.shouldRemember;
+      } else {
+        return undefined;
       }
     }
     public has(section: string): boolean {
@@ -228,9 +234,7 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
     expect(cmdWithArgSpy.callCount).to.equal(1);
-    expect(cmdWithArgSpy.getCall(0).args[0]).equals(
-      'force:lightning:local:preview'
-    );
+    expect(cmdWithArgSpy.getCall(0).args[0]).equals(sfdxPreviewCommand);
     expect(cmdWithFlagSpy.callCount).to.equal(4);
     expect(cmdWithFlagSpy.getCall(0).args).to.have.same.members([
       '-p',
@@ -281,9 +285,7 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
     expect(cmdWithArgSpy.callCount).to.equal(1);
-    expect(cmdWithArgSpy.getCall(0).args[0]).equals(
-      'force:lightning:local:preview'
-    );
+    expect(cmdWithArgSpy.getCall(0).args[0]).equals(sfdxPreviewCommand);
     expect(cmdWithFlagSpy.callCount).to.equal(4);
     expect(cmdWithFlagSpy.getCall(0).args).to.have.same.members(['-p', 'iOS']);
     expect(cmdWithFlagSpy.getCall(1).args).to.have.same.members([
@@ -670,9 +672,7 @@ describe('forceLightningLwcMobile', () => {
     sinon.assert.calledOnce(showQuickPickStub);
     sinon.assert.calledOnce(showInputBoxStub);
     expect(cmdWithArgSpy.callCount).to.equal(1);
-    expect(cmdWithArgSpy.getCall(0).args[0]).equals(
-      'force:lightning:local:preview'
-    );
+    expect(cmdWithArgSpy.getCall(0).args[0]).equals(sfdxPreviewCommand);
     expect(cmdWithFlagSpy.callCount).to.equal(4);
     expect(cmdWithFlagSpy.getCall(0).args).to.have.same.members([
       '-p',
