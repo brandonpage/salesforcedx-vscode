@@ -61,6 +61,10 @@ export const platformInput: PreviewQuickPickItem[] = [
 
 const logName = 'force_lightning_lwc_mobile';
 const commandName = nls.localize('force_lightning_lwc_mobile_text');
+export const sfdxPreviewCommand = 'force:lightning:lwc:preview';
+export const rememberDeviceKey = 'rememberDevice';
+export const logLevelKey = 'logLevel';
+export const defaultLogLevel = 'warn';
 
 export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   const startTime = process.hrtime();
@@ -130,7 +134,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
       ? nls.localize('force_lightning_lwc_mobile_android_target_default')
       : nls.localize('force_lightning_lwc_mobile_ios_target_default');
   const rememberDeviceConfigured =
-    getWorkspaceSettings().get('rememberDevice') || false;
+    getWorkspaceSettings().get(rememberDeviceKey) || false;
   const lastTarget = getRememberedDevice(platformSelection);
 
   // Remember device setting enabled and previous device retrieved.
@@ -166,11 +170,14 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   const targetUsed = target || platformSelection.defaultTargetName;
   const command = new SfdxCommandBuilder()
     .withDescription(commandName)
-    .withArg('force:lightning:lwc:preview')
+    .withArg(sfdxPreviewCommand)
     .withFlag('-p', platformSelection.platformName)
     .withFlag('-t', targetUsed)
     .withFlag('-d', componentName)
-    .withFlag('--loglevel', getWorkspaceSettings().get('logLevel') || 'warn')
+    .withFlag(
+      '--loglevel',
+      getWorkspaceSettings().get(logLevelKey) || defaultLogLevel
+    )
     .build();
 
   const mobileExecutor = new CliCommandExecutor(command, {
