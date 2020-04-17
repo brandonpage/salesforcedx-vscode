@@ -23,10 +23,10 @@ import { SinonSandbox } from 'sinon';
 import * as vscode from 'vscode';
 import * as utils from '../../../src/';
 import {
-  forceLightningLwcMobile,
-  platformInput,
   defaultLogLevel,
+  forceLightningLwcMobile,
   logLevelKey,
+  platformInput,
   rememberDeviceKey,
   sfdxPreviewCommand
 } from '../../../src/commands/forceLightningLwcMobile';
