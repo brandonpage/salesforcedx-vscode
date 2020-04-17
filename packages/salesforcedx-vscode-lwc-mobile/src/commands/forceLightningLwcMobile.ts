@@ -78,7 +78,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
     }
   }
 
-  const resourcePath = sourceUri.path;
+  let resourcePath = sourceUri.path;
   if (!resourcePath) {
     const message = nls.localize(
       'force_lightning_lwc_preview_file_undefined',
@@ -86,6 +86,9 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
     );
     showError(new Error(message));
     return;
+  } else if (resourcePath.startsWith('/c:')) {
+    // Fix path issue on Windows
+    resourcePath = resourcePath.substring(1, resourcePath.length);
   }
 
   if (!fs.existsSync(resourcePath)) {
@@ -163,7 +166,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
   const targetUsed = target || platformSelection.defaultTargetName;
   const command = new SfdxCommandBuilder()
     .withDescription(commandName)
-    .withArg('force:lightning:local:preview')
+    .withArg('force:lightning:lwc:preview')
     .withFlag('-p', platformSelection.platformName)
     .withFlag('-t', targetUsed)
     .withFlag('-d', componentName)
