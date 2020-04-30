@@ -245,7 +245,7 @@ describe('forceLightningLwcMobile', () => {
       'SFDXEmulator'
     ]);
     expect(cmdWithFlagSpy.getCall(2).args).to.have.same.members([
-      '-d',
+      '-n',
       'c/foo'
     ]);
     expect(cmdWithFlagSpy.getCall(3).args).to.have.same.members([
@@ -293,7 +293,7 @@ describe('forceLightningLwcMobile', () => {
       'SFDXSimulator'
     ]);
     expect(cmdWithFlagSpy.getCall(2).args).to.have.same.members([
-      '-d',
+      '-n',
       'c/foo'
     ]);
     expect(cmdWithFlagSpy.getCall(3).args).to.have.same.members([
@@ -683,7 +683,7 @@ describe('forceLightningLwcMobile', () => {
       'SFDXEmulator'
     ]);
     expect(cmdWithFlagSpy.getCall(2).args).to.have.same.members([
-      '-d',
+      '-n',
       'c/foo'
     ]);
     expect(cmdWithFlagSpy.getCall(3).args).to.have.same.members([

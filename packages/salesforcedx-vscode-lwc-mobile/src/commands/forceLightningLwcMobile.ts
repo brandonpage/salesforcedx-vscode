@@ -173,7 +173,7 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
     .withArg(sfdxPreviewCommand)
     .withFlag('-p', platformSelection.platformName)
     .withFlag('-t', targetUsed)
-    .withFlag('-d', componentName)
+    .withFlag('-n', componentName)
     .withFlag(
       '--loglevel',
       getWorkspaceSettings().get(logLevelKey) || defaultLogLevel
@@ -205,15 +205,28 @@ export async function forceLightningLwcMobile(sourceUri: vscode.Uri) {
           nls.localize('force_lightning_lwc_mobile_no_plugin')
         );
       }
-    } else {
+    } else if (platformSelection.id === PreviewPlatformType.iOS) {
       notificationService.showSuccessfulExecution(execution.command.toString());
-      const message =
-        platformSelection.id === PreviewPlatformType.Android
-          ? nls.localize('force_lightning_lwc_mobile_android_start', targetUsed)
-          : nls.localize('force_lightning_lwc_mobile_ios_start', targetUsed);
-      vscode.window.showInformationMessage(message);
+      vscode.window.showInformationMessage(
+        nls.localize('force_lightning_lwc_mobile_ios_start', targetUsed)
+      );
     }
   });
+
+  // TODO: Remove this when SFDX Plugin launches Android Emulator as separate process.
+  // listen for Android Emulator finished
+  if (platformSelection.id === PreviewPlatformType.Android) {
+    execution.stdoutSubject.subscribe(async data => {
+      if (data && data.toString().includes('Opening Browser')) {
+        notificationService.showSuccessfulExecution(
+          execution.command.toString()
+        );
+        vscode.window.showInformationMessage(
+          nls.localize('force_lightning_lwc_mobile_android_start', targetUsed)
+        );
+      }
+    });
+  }
 }
 
 function getRememberedDevice(platform: PreviewQuickPickItem): string {
