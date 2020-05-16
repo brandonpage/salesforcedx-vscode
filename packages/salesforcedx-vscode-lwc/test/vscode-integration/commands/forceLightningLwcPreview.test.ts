@@ -42,7 +42,6 @@ const {
 } = sfdxCoreExports;
 const sfdxMobilePreviewCommand = 'force:lightning:lwc:preview';
 const rememberDeviceKey = 'rememberDevice';
-const mobileEnabledKey = 'enablePreviewOnMobile';
 const logLevelKey = 'logLevel';
 const defaultLogLevel = 'warn';
 const androidSuccessString = 'Launching... Opening Browser';

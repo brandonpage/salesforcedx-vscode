@@ -112,7 +112,7 @@ export async function forceLightningLwcPreview(sourceUri: vscode.Uri) {
     return;
   } else if (resourcePath.startsWith('/c:')) {
     // Fix path issue on Windows
-    resourcePath = resourcePath.substring(1, resourcePath.length);
+    resourcePath = resourcePath.substring(1);
   }
 
   if (!fs.existsSync(resourcePath)) {
@@ -139,6 +139,7 @@ export async function forceLightningLwcPreview(sourceUri: vscode.Uri) {
   }
 
   const fullUrl = `${DEV_SERVER_PREVIEW_ROUTE}/${componentName}`;
+  // Preform existing desktop behavior if mobile is not enabled.
   if (!sfdxCoreSettings.getLwcPreviewOnMobileEnabled()) {
     await startServer(true, fullUrl, startTime);
     return;
